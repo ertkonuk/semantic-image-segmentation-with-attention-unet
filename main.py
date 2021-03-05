@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils import data
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 import torchvision
 
 # . . numpy
@@ -15,21 +15,23 @@ import numpy as np
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+# , , pandas
+import pandas as pd
 # . . matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as npimg
 # . .  set this to be able to see the figure axis labels in a dark theme
 from matplotlib import style
-#style.use('dark_background')
-# . . to see the available options
-# print(plt.style.available)
 
+# . . for model summary
 from torchsummary import summary
+
+# . . for idential transformation the image and mask
+import albumentations as transforms
 
 # . . import libraries by tugrulkonuk
 import utils
 from dataset import TGSSaltDataset
-from utils import parse_args
 from model import *
 from trainer import Trainer
 from callbacks import ReturnBestModel, EarlyStopping
@@ -117,7 +119,23 @@ images, masks = next(iter(trainloader))
 utils.plot_masks(images, masks, 4, 4, figsize=(2,2))
 
 # . . instantiate the model
-model = AttentionUNet()
+#model = AttentionUNet()
+
+# . . use the parabolic network
+# . . the time step
+h = 1e-1
+# . . the network geometry
+NG = [ 1,  64 , 128, 128, 128,
+       64, 128, 128, 128, 128 ]
+NG = np.reshape(NG, (2,-1))
+# .  weights for the classifier
+W = torch.rand(1, NG[-1, -1], 1, 1)*1e-3
+# . . weights for the CNN
+#K,L = net.init_weights(L_mode='laplacian')
+## . . the parabolic CNN model       
+model = PackNet(h, NG, L_mode='rand',device=device)
+# . . send model to device (GPU)
+model.to(device)
 
 # . . send model to device (GPU)
 model.to(device)
